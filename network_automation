@@ -1,0 +1,71 @@
+import netmiko
+from datetime import datetime
+from netmiko.ssh_exception import NetMikoTimeoutException
+from netmiko.ssh_exception import NetMikoAuthenticationException
+from netmiko.ssh_exception import SSHException
+import sys
+import os
+from pythonping import ping
+from getpass import getpass
+
+
+def Automate():
+	cwd = os.getcwd()
+	DEVICES = open(cwd+r"\Netmiko\devices.txt")
+	
+	uname = ""
+	pword = ""
+	
+	for HOST in DEVICES:
+		HOST = HOST.strip("\n")
+		
+		response_list = ping(HOST,count=5)
+		
+		if response_list.success() == True:
+		
+			try:
+			
+				dateTimeObj = datetime.now()
+				timestampStr = dateTimeObj.strftime("%d-%b-%Y %H %M %S.%f)
+				connection = netmiko.ConnectHandler(ip=HOST,device_type="cisco_ios",username = uname,password=pword,secret=pword,global_delay_factor=2,session_log=cwd+r"\Netmiko\output\SW_"+HOST+"_"+timestampStr+".txt")
+				connection.enable()
+				result = connection.find_prompt()
+				print(result)
+				show_com = open(cwd+r"\Netmiko\show.txt")
+				
+				for SHOW in show_com:
+					output = connection.send_command(SHOW)
+					print(output)
+					
+					
+				
+				connection.disconnect()
+				show_com.close
+				
+			except NetMikoTimeoutException:
+				print('Device Not Reachable')
+				continue
+			
+			except NetMikoAuthenticationException:
+				print('Authentication Failure')
+				continue
+			
+			except SSHException:
+				print('Make sure SSH is enable')
+				continue
+			
+			except:
+				continue
+			
+		
+		else:
+			saveoutput = open(cwd+r"\output\Device unreachable_"+HOST+".txt","w")
+      print("Device unreachable "+HOST)
+      saveoutput.write("Device unreachable "+HOST)
+      saveoutput.write("\n")
+      saveoutput.close
+      print("Device unreachable")
+      
+Automate()
+
+			
