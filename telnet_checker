@@ -1,0 +1,100 @@
+import getpass
+import telnetlib
+import threading, time, paramiko, socket, getpass
+from queue import Queue
+import sys
+import os
+
+locke1 = threading.Lock()
+q = Queue()
+
+def Check_hostname(host_name)
+    pw_r = ""
+    username = ""
+    
+    with locke1:
+      print ("Checking hostname: "+str(host
+      file_output = open(r'C:\Output_file.txt','a')
+	  file_success = open(r'C:\Success_file.txt','a')
+	  file_failed = open(r'C:\failed_file.txt','a')
+      file_timeout = open(r'C:\timeout_file.txt','a')
+	  file_EOFError = open(r'C:\EOFError_file.txt','a')
+	  
+      try:
+        tn = telnetlib.Telnet(host_name)
+        tn.read_until(b"Username: ")
+		tn.write(username.encode('ascii') + b"\n")
+		
+		tn.read_until(b"Password: ")
+		tn.write(pw_r.encode('ascii') + b"\n")
+		
+		tn.write(b"exit\n")
+		print(tn.read_all().decode('ascii'))
+		
+		file_success.write(str(host_name+"\n"))
+		file_success.close()
+		file_output.write("success: "+str(host_name+"\n"))
+		file_output.close()
+		
+	  except ConnectionRefusedError:
+		file_failed.write(str(host_name+"\n"))
+		file_failed.close()
+		file_output.write("Telnet connection refuse: "+str(host_name+"\n"))
+		file_output.close()
+	  
+	  except TimeoutError:
+		file_timeout.write(str(host_name+"\n"))
+		file_timeout.close()
+		file_output.write("Telnet connection timeout: "str(host_name+"\n"))
+		file_output.close()
+		
+	  except EOFError:
+		file_timeout.write(str(host_name+"\n"))
+		file_timeout.close()
+		file_output.write("Username / password incorrect: "+str(host_name+"\n"))
+		file_output.close()
+		
+		
+def performer1():
+	while True:
+		hostname_value = q.get()
+		check_hostname(hostname_value)
+		q.task_done()
+
+if __name__ == '__main__':
+
+	print("this script checks all the hostnames in the input_file with your standard password and write the outputs in below files: \n1.file_output\n2.file_success \n3.file_failed \n4.file_error \n")
+	
+	f = open(r'C:\Output_file.txt','w')
+	f.write("---------------------\n")
+	f.close()
+	f = open(r'C:\Success_file.txt','w')
+	f.write("---------------------\n")
+	f.close()
+	f = open(r'C:\failed_file.txt','w')
+	f.write("---------------------\n")
+	f.close()
+	f = open(r'C:\timeout_file.txt','w')
+	f.write("---------------------\n")
+	f.close()
+	f = open(r'C:\EOFError_file.txt','w')
+	f.write("---------------------\n")
+	f.close()
+	
+	with open(r"C:\devices.txt") as f:
+		hostname1 = f.read().splitlines()
+		
+	
+	start_time1 = time.time()
+	
+	for i in hostname1:
+		q.put(i)
+	
+	for no_of_threads in range(10):
+		t = threading.Thread(target=performer1)
+		t.daemon=True
+		t.start()
+		
+	q.join()
+	print("Check output files for results")
+	print("Completed task in" + str(time.time() - start_time1) + "seconds")
